@@ -1,0 +1,37 @@
+from typing import NamedTuple
+from providers.base import BaseProvider
+from providers.groq import GroqProvider
+from providers.gemini import GeminiProvider
+
+
+class ModelInfo(NamedTuple):
+    id: str
+    name: str
+    provider: str
+    context_window: int
+    max_output_tokens: int
+
+
+MODELS: list[ModelInfo] = [
+    # Gemini Models
+    ModelInfo("gemini-2.5-flash", "Gemini 2.5 Flash", "gemini", 1_048_576, 65536),
+    ModelInfo("gemini-2.5-pro", "Gemini 2.5 Pro", "gemini", 1_048_576, 65536),
+    ModelInfo("gemini-2.0-flash", "Gemini 2.0 Flash", "gemini", 1_048_576, 8192),
+    # Groq Models
+    ModelInfo("openai/gpt-oss-120b", "GPT-OSS 120B", "groq", 131_072, 65536),
+    ModelInfo("openai/gpt-oss-20b", "GPT-OSS 20B", "groq", 131_072, 65536),
+    ModelInfo("qwen/qwen3.8-27b", "Qwen3.8 27B", "groq", 131_042, 16384),
+]
+
+
+def create_provider(provider_name: str, api_key: str, model_id: str | None = None) -> BaseProvider:
+    provider_name = provider_name.lower()
+
+    if provider_name == "groq":
+        model = model_id or "openai/gpt-oss-120b"
+        return GroqProvider(api_key=api_key, model=model)
+    elif provider_name == "gemini":
+        model = model_id or "gemini-2.5-flash"
+        return GeminiProvider(api_key=api_key, model=model)
+    else:
+        raise ValueError(f"Unknown provider: '{provider_name}'. Supported: 'groq', 'gemini'")
