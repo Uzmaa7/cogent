@@ -19,10 +19,10 @@ class MessageItem:
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     
 
+
+
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {"role": self.role}
-
-
 
         if self.tool_call_id:
             result["tool_call_id"] = self.tool_call_id
@@ -30,11 +30,7 @@ class MessageItem:
         if self.tool_calls:
             result["tool_calls"] = self.tool_calls
 
-
-
-        if self.content:
-            result["content"] = self.content
-
+        result["content"] = self.content
         return result
 
 
@@ -57,7 +53,11 @@ class ContextManager:
 
         self._messages.append(item)
 
-    def add_assistant_message(self, content: str) -> None:
+    def add_assistant_message(
+        self, 
+        content: str, 
+        tool_calls: list[dict[str, Any]] | None = None,
+    ) -> None:
         item = MessageItem(
             role="assistant",
             content=content or "",
@@ -65,6 +65,7 @@ class ContextManager:
                 content or "",
                 self._model_name,
             ),
+            tool_calls=tool_calls or [],
         )
 
         self._messages.append(item)

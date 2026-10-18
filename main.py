@@ -4,6 +4,8 @@ from agent.agent import Agent, AgentEvent, AgentEventType
 import click
 import sys
 from ui.tui import TUI, get_console
+from pathlib import Path
+
 
 
 
@@ -19,6 +21,47 @@ class CLI:
         async with Agent() as agent:
             self.agent = agent
             return await self._process_message(message)
+
+
+    async def run_interactive(self) -> str | None:
+        self.tui.print_welcome(
+            "AI Agent",
+            lines=[
+                f"model: openai/gpt-oss-120b",
+                f"cwd: {Path.cwd()}",
+                "commands: /help /config /approval /model /exit",
+            ],
+        )
+        async with Agent() as agent:
+            self.agent = agent
+
+            while True:
+                try:
+                    user_input = console.input("\n[user]>[/user] ").strip()
+                    if not user_input:
+                        continue
+
+                    # ✅ EXIT COMMAND FIX
+                    if user_input.lower() in ("/exit", "exit", "quit"):
+                        break
+
+                    await self._process_message(user_input)
+                except KeyboardInterrupt:
+                    console.print("\n[dim]Use /exit to quit[/dim]")
+                except EOFError:
+                    break
+        
+
+    def _get_tool_kind(self, tool_name: str) -> str | None:
+        tool_kind = None
+        tool = self.agent.tool_registry.get(tool_name)
+        if not tool:
+            tool_kind = None
+
+        tool_kind = tool.kind.value
+
+        return tool_kind
+    
 
     async def _process_message(self, message:str)-> str | None:
         if not self.agent:
@@ -50,7 +93,7 @@ class CLI:
 
             elif event.type == AgentEventType.TOOL_CALL_START:
                 tool_name = event.data.get("name", "unknown")
-                tool_kind = None
+                tool_kind = self._get_tool_kind(tool_name)
 
                 tool = self.agent.tool_registry.get(tool_name)
                 if not tool:
@@ -63,8 +106,22 @@ class CLI:
                     tool_kind,
                     event.data.get("arguments", {}),
                 )
-            
 
+            elif event.type == AgentEventType.TOOL_CALL_COMPLETE:
+                tool_name = event.data.get("name", "unknown")
+                tool_kind = self._get_tool_kind(tool_name)
+
+                self.tui.tool_call_complete(
+                    event.data.get("call_id", ""),
+                    tool_name,
+                    tool_kind,
+
+                    event.data.get("success", False),
+                    event.data.get("output", ""),
+                    event.data.get("error"),
+                    event.data.get("metadata"),
+                    event.data.get("truncated", False),
+                )
 
         return final_response
                 
@@ -84,6 +141,8 @@ def main(
         result = asyncio.run(cli.run_single(prompt))
         if result is None:
             sys.exit(1)
+    else:
+        asyncio.run(cli.run_interactive())
     
 
 

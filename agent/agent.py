@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 from tools.registry import create_default_registry
 from pathlib import Path
+import json
 
 load_dotenv()
 
@@ -63,8 +64,24 @@ class Agent:
                     event.error or "Unknown error occurred.",
                 ) 
 
-        self.context_manager.add_assistant_message(response_text or None)
-
+        self.context_manager.add_assistant_message(
+            response_text or None,
+            (
+                [
+                    {
+                        "id": tc.call_id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.name,
+                            "arguments": json.dumps(tc.arguments) if isinstance(tc.arguments, dict) else str(tc.arguments),
+                        },
+                    }
+                    for tc in tool_calls
+                ]
+                if tool_calls
+                else None
+            ),
+        )
         
         if response_text:
             yield AgentEvent.text_complete(response_text)

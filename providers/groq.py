@@ -22,37 +22,29 @@ def _to_groq_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if role == "system":
             continue
 
-        content = msg.get("content")
-        if isinstance(content, str):
-            groq_msgs.append({"role": role, "content": content})
-        elif isinstance(content, list):
-            text_parts = "".join([b["text"] for b in content if b.get("type") == "text"])
-            tool_calls = [
-                {
-                    "id": b["id"],
-                    "type": "function",
-                    "function": {"name": b["name"], "arguments": json.dumps(b["input"]) if isinstance(b["input"], dict) else b["input"]},
-                }
-                for b in content
-                if b.get("type") == "tool_use"
-            ]
+        # Handled standard OpenAI format:
+        if role == "assistant":
+            msg_obj: dict[str, Any] = {
+                "role": "assistant",
+                "content": msg.get("content") or None,
+            }
+            if msg.get("tool_calls"):
+                msg_obj["tool_calls"] = msg.get("tool_calls")
+            groq_msgs.append(msg_obj)
 
-            if role == "assistant":
-                msg_obj: dict[str, Any] = {"role": "assistant", "content": text_parts or None}
-                if tool_calls:
-                    msg_obj["tool_calls"] = tool_calls
-                groq_msgs.append(msg_obj)
-            else:
-                tool_results = [b for b in content if b.get("type") == "tool_result"]
-                if tool_results:
-                    for tr in tool_results:
-                        groq_msgs.append({
-                            "role": "tool",
-                            "tool_call_id": tr["tool_use_id"],
-                            "content": tr["content"]
-                        })
-                else:
-                    groq_msgs.append({"role": "user", "content": text_parts})
+        elif role == "tool":
+            groq_msgs.append({
+                "role": "tool",
+                "tool_call_id": msg.get("tool_call_id"),
+                "content": msg.get("content", ""),
+            })
+
+        else:
+            groq_msgs.append({
+                "role": role,
+                "content": msg.get("content", "")
+            })
+
     return groq_msgs
 
 
