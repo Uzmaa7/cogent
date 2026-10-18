@@ -143,7 +143,9 @@ class GroqProvider(BaseProvider):
 
         try:
             res_stream = await self.client.chat.completions.create(**kwargs)
+
             async for chunk in res_stream:
+                
                 if hasattr(chunk, "x_groq") and chunk.x_groq and hasattr(chunk.x_groq, "usage"):
                     prompt_tokens = getattr(chunk.x_groq.usage, "prompt_tokens", 0) or prompt_tokens
                     completion_tokens = getattr(chunk.x_groq.usage, "completion_tokens", 0) or completion_tokens

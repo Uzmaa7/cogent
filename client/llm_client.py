@@ -20,6 +20,7 @@ class LLMClient:
         stream: bool = True,
         max_tokens: int = 1024,
     ) -> AsyncGenerator[StreamEvent, None]:
+        
         async for event in self.provider.complete(
             messages=messages,
             tools=tools,
