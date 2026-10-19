@@ -4,7 +4,7 @@ from typing import Any
 from tools.base import Tool, ToolInvocation, ToolResult
 import logging
 from tools.builtin import ReadFileTool, get_all_builtin_tools
-
+from config.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -99,13 +99,13 @@ class ToolRegistry:
         return result
 
 
-def create_default_registry() -> ToolRegistry:
+def create_default_registry(config: Config) -> ToolRegistry:
     registry = ToolRegistry()
 
     BUILTIN_TOOLS = [ReadFileTool]
 
     for tool_class in get_all_builtin_tools():
-        registry.register(tool_class())
+        registry.register(tool_class(config))
 
 
     return registry

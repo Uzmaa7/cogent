@@ -24,7 +24,7 @@ class Session:
             model_id=self.config.model_name,
                    
         )
-        self.tool_registry = create_default_registry()
+        self.tool_registry = create_default_registry(config)
         self.context_manager= ContextManager(config=config)
 
         self.session_id = str(uuid.uuid4())
