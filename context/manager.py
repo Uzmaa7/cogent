@@ -4,7 +4,7 @@ from client.response import TokenUsage
 
 from prompts.system import get_system_prompt
 from dataclasses import dataclass, field
-
+from config.config import Config
 
 from utils.text import count_tokens
 from tools.base import Tool
@@ -35,10 +35,13 @@ class MessageItem:
 
 
 class ContextManager:
-    def __init__(self) -> None:
-        self._system_prompt = get_system_prompt()
+    def __init__(self, config: Config) -> None:
+        self.config = config
+        self._system_prompt = get_system_prompt(config)
         
-        self._model_name = "openai/gpt-oss-120b"
+        # self._model_name = "openai/gpt-oss-120b"
+        self._model_name = self.config.model_name
+        
         self._messages: list[MessageItem] = []
 
     def add_user_message(self, content: str) -> None:

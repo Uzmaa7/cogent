@@ -2,14 +2,17 @@ from typing import Any, AsyncGenerator
 from providers.factory import create_provider
 from providers.base import BaseProvider
 from client.response import StreamEvent
-
+from config.config import Config
 
 class LLMClient:
-    def __init__(self, provider_name: str, api_key: str, model_id: str | None = None) -> None:
+    def __init__(self, provider_name: str, api_key: str, config: Config, model_id: str | None = None,) -> None:
         self.provider: BaseProvider = create_provider(
             provider_name=provider_name,
             api_key=api_key,
+            config=config,
             model_id=model_id,
+            
+           
         )
 
     async def chat_completion(
@@ -19,6 +22,8 @@ class LLMClient:
         system: str | None = None,
         stream: bool = True,
         max_tokens: int = 1024,
+        
+        
     ) -> AsyncGenerator[StreamEvent, None]:
         
         async for event in self.provider.complete(

@@ -2,6 +2,7 @@ from typing import NamedTuple
 from providers.base import BaseProvider
 from providers.groq import GroqProvider
 from providers.gemini import GeminiProvider
+from config.config import Config
 
 
 class ModelInfo(NamedTuple):
@@ -24,12 +25,12 @@ MODELS: list[ModelInfo] = [
 ]
 
 
-def create_provider(provider_name: str, api_key: str, model_id: str | None = None) -> BaseProvider:
+def create_provider(provider_name: str, api_key: str, config: Config, model_id: str | None = None) -> BaseProvider:
     provider_name = provider_name.lower()
 
     if provider_name == "groq":
-        model = model_id or "openai/gpt-oss-120b"
-        return GroqProvider(api_key=api_key, model=model)
+        model = model_id or config.model_name
+        return GroqProvider(api_key=api_key,config=config, model=model)
     elif provider_name == "gemini":
         model = model_id or "gemini-2.5-flash"
         return GeminiProvider(api_key=api_key, model=model)

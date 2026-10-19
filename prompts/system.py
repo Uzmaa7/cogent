@@ -1,10 +1,10 @@
 from datetime import datetime
 import platform
-
+from config.config import Config
 
 
 def get_system_prompt(
-   
+    config: Config,
     user_memory: str | None = None,
    
 ) -> str:
@@ -22,11 +22,42 @@ def get_system_prompt(
     # Security guidelines
     parts.append(_get_security_section())
 
+    
+
+    if config.developer_instructions:
+        parts.append(_get_developer_instructions_section(config.developer_instructions))
+
+    if config.user_instructions:
+        parts.append(_get_user_instructions_section(config.user_instructions))
+
+
+
     # Operational guidelines
     parts.append(_get_operational_section())
 
     return "\n\n".join(parts)
 
+
+
+
+
+
+def _get_developer_instructions_section(instructions: str) -> str:
+    return f"""# Project Instructions
+
+The following instructions were provided by the project maintainers:
+
+{instructions}
+
+Follow these instructions carefully as they contain important context about this specific project."""
+
+
+def _get_user_instructions_section(instructions: str) -> str:
+    return f"""# User Instructions
+
+The user has provided the following custom instructions:
+
+{instructions}"""
 
 def _get_identity_section() -> str:
     """Generate the identity section."""

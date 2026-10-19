@@ -12,7 +12,8 @@ import re
 from rich.syntax import Syntax
 from utils.text import truncate_text
 from rich.console import Group
-
+from config.config import Config
+import json
 
 
 AGENT_THEME = Theme(
@@ -57,6 +58,7 @@ def get_console() -> Console:
 class TUI:
     def __init__(
         self,
+        config: Config,
         console: Console | None = None,
     ) -> None:
         
@@ -64,7 +66,8 @@ class TUI:
         self._assistant_stream_open = False
 
         self._tool_args_by_call_id: dict[str, dict[str, Any]] = {}
-        self.cwd = Path.cwd()
+        self.config = config
+        self.cwd = self.config.cwd
         
         self._max_block_tokens = 2500
 
@@ -116,10 +119,18 @@ class TUI:
                     byte_count = len(value.encode("utf-8", errors="replace"))
                     value = f"<{line_count} lines • {byte_count} bytes>"
 
-            if isinstance(value, bool):
-                value = str(value)
+            # if isinstance(value, bool):
+            #     value = str(value)
 
-            table.add_row(key, value)
+            # table.add_row(key, value)
+
+            if not isinstance(value, str):
+                if isinstance(value, (dict, list)):
+                    value = json.dumps(value)
+                else:
+                    value = str(value)
+
+            table.add_row(str(key), value)
 
         return table
 

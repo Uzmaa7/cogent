@@ -3,7 +3,7 @@ import json
 import re
 from typing import Any, AsyncGenerator
 from groq import AsyncGroq, APIConnectionError, APIError, RateLimitError
-
+from config.config import Config
 from providers.base import BaseProvider
 from client.response import (
     StreamEventType,
@@ -13,6 +13,7 @@ from client.response import (
     ToolCall,
     ToolCallDelta,
 )
+
 
 
 def _to_groq_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -51,10 +52,20 @@ def _to_groq_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
 class GroqProvider(BaseProvider):
     name = "groq"
 
-    def __init__(self, api_key: str, model: str = "openai/gpt-oss-120b") -> None:
-        self.client = AsyncGroq(api_key=api_key)
+    def __init__(self, api_key: str, config: Config, model: str = "openai/gpt-oss-120b",) -> None:
+
+        # print(f"DEBUG [GroqProvider.__init__]: Received api_key arg -> repr: {repr(api_key)}")
+        clean_key = api_key.strip().strip('"').strip("'") if api_key else ""
+        # print(f"DEBUG [GroqProvider.__init__]: Instantiating AsyncGroq with key length -> {len(clean_key)}, prefix -> {clean_key[:5]}...")
+
+        
+
+        
+        self.config = config
+        self.client = AsyncGroq(api_key=clean_key)
         self.model = model
         self.max_retries = 3
+        
 
     async def close(self) -> None:
         await self.client.close()
@@ -81,6 +92,10 @@ class GroqProvider(BaseProvider):
         max_tokens: int = 1024,
         temperature: float | None = None,
     ) -> AsyncGenerator[StreamEvent, None]:
+
+
+        # print(f"DEBUG [GroqProvider.complete]: Executing API request using model -> {self.model}")
+        # print(f"DEBUG [GroqProvider.complete]: Client API key set -> {self.client.api_key[:5]}...")
         
         formatted_messages = []
         if system:
@@ -91,7 +106,8 @@ class GroqProvider(BaseProvider):
         formatted_tools = self._build_tools(tools) if tools else None
 
         kwargs: dict[str, Any] = {
-            "model": self.model,
+            # "model": self.model,
+            "model": self.config.model_name,
             "messages": formatted_messages,
             "stream": True,
             "max_tokens": max_tokens,
@@ -118,6 +134,7 @@ class GroqProvider(BaseProvider):
                     yield StreamEvent(type=StreamEventType.ERROR, error=f"Max retries exceeded: {e}")
                     return
             except APIConnectionError as e:
+                    print(f"DEBUG [GroqProvider APIError caught]: {e}")
                     if attempt < self.max_retries:
                         wait_time = 2**attempt
                         await asyncio.sleep(wait_time)
@@ -134,9 +151,12 @@ class GroqProvider(BaseProvider):
         prompt_tokens, completion_tokens = 0, 0
 
         try:
+            # print("DEBUG [_generate_stream]: About to await client.chat.completions.create()...")
             res_stream = await self.client.chat.completions.create(**kwargs)
+            # print("DEBUG [_generate_stream]: Successfully created res_stream! Starting streaming loop...")
 
             async for chunk in res_stream:
+                # print(f"DEBUG [_generate_stream]: Received chunk -> {chunk}")
                 
                 if hasattr(chunk, "x_groq") and chunk.x_groq and hasattr(chunk.x_groq, "usage"):
                     prompt_tokens = getattr(chunk.x_groq.usage, "prompt_tokens", 0) or prompt_tokens
@@ -181,6 +201,7 @@ class GroqProvider(BaseProvider):
                             )
 
         except APIError as err:
+            print(f"DEBUG [_generate_stream EXCEPTION]: APIError caught -> {err}")
             failed_gen = getattr(err, "error", {}).get("failed_generation") if hasattr(err, "error") else None
             if getattr(err, "status_code", None) == 400 and failed_gen:
                 regex = r"<function=(\w+)\s+(.+?)</function>"
