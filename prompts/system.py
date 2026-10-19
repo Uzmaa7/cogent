@@ -113,6 +113,8 @@ def _get_operational_section() -> str:
     """Generate operational guidelines."""
     return """# Operational Guidelines
 
+
+
 ## Tone and Style (CLI Interaction)
 
 - **Concise & Direct:** Adopt a professional, direct, and concise tone suitable for a CLI environment.

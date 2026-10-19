@@ -69,7 +69,7 @@ class TUI:
         self.config = config
         self.cwd = self.config.cwd
         
-        self._max_block_tokens = 2500
+        self._max_block_tokens = 240
 
 
     def begin_assistant(self) -> None:
@@ -90,6 +90,7 @@ class TUI:
     def _ordered_args(self, tool_name: str, args: dict[str, Any]) -> list[tuple]:
         _PREFERRED_ORDER = {
             "read_file": ["path", "offset", "limit"],
+            "write_file": ["path", "create_directories", "content"],
         }
 
         preferred = _PREFERRED_ORDER.get(tool_name, [])
@@ -267,6 +268,7 @@ class TUI:
             error: str | None,
             metadata: dict[str, Any] | None,
             truncated:bool,
+            diff: str | None,
         ) -> None:
 
             
@@ -334,6 +336,25 @@ class TUI:
                         )
                     )
 
+
+            elif name == "write_file" and success and diff:
+                output_line = output.strip() if output.strip() else "Completed"
+                blocks.append(Text(output_line, style="muted"))
+                diff_text = diff
+                diff_display = truncate_text(
+                    diff_text,
+                    self.config.model_name,
+                    self._max_block_tokens,
+                )
+                blocks.append(
+                    Syntax(
+                        diff_display,
+                        "diff",
+                        theme="monokai",
+                        word_wrap=True,
+                    )
+                )
+                
             if truncated:
                 blocks.append(Text("note: tool output was truncated", style="warning"))
 
