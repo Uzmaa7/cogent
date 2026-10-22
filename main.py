@@ -60,11 +60,12 @@ class CLI:
         tool_kind = None
         tool = self.agent.session.tool_registry.get(tool_name)
         if not tool:
-            tool_kind = None
+            return None
+            # tool_kind = None
 
-        tool_kind = tool.kind.value
+        # tool_kind = tool.kind.value
 
-        return tool_kind
+        return tool.kind.value
 
     
 
@@ -100,11 +101,7 @@ class CLI:
                 tool_name = event.data.get("name", "unknown")
                 tool_kind = self._get_tool_kind(tool_name)
 
-                tool = self.agent.session.tool_registry.get(tool_name)
-                if not tool:
-                    tool_kind = None
-
-                tool_kind = tool.kind.value
+                
                 self.tui.tool_call_start(
                     event.data.get("call_id", ""),
                     tool_name,
