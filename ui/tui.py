@@ -96,6 +96,7 @@ class TUI:
             "list_dir": ["path", "include_hidden"],
             "grep": ["path", "case_insensitive", "pattern"],
             "glob": ["path", "pattern"],
+            "memory": ["action", "key", "value"],
 
 
 
@@ -477,6 +478,35 @@ class TUI:
                 if summary:
                     blocks.append(Text(" • ".join(summary), style="muted"))
 
+                output_display = truncate_text(
+                    output,
+                    self.config.model_name,
+                    self._max_block_tokens,
+                )
+                blocks.append(
+                    Syntax(
+                        output_display,
+                        "text",
+                        theme="monokai",
+                        word_wrap=True,
+                    )
+                )
+
+
+            elif name == "memory" and success:
+                action = args.get("action")
+                key = args.get("key")
+                found = metadata.get("found")
+                summary = []
+                if isinstance(action, str) and action:
+                    summary.append(action)
+                if isinstance(key, str) and key:
+                    summary.append(key)
+                if isinstance(found, bool):
+                    summary.append("found" if found else "missing")
+
+                if summary:
+                    blocks.append(Text(" • ".join(summary), style="muted"))
                 output_display = truncate_text(
                     output,
                     self.config.model_name,

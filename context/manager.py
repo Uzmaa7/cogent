@@ -35,9 +35,9 @@ class MessageItem:
 
 
 class ContextManager:
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config,  user_memory: str | None, tools: list[Tool] | None) -> None:
         self.config = config
-        self._system_prompt = get_system_prompt(config)
+        self._system_prompt = get_system_prompt(config,  user_memory)
         
         # self._model_name = "openai/gpt-oss-120b"
         self._model_name = self.config.model_name
